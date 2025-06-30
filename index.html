@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sintetizador para Makey Makey</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Paleta de Cores Makey Makey */
+        :root {
+            --mm-red: #e52d28;
+            --mm-yellow: #fdea3b;
+            --mm-green: #80c44c;
+            --mm-black: #000000;
+            --mm-bg: #ffffff;
+            --mm-text: var(--mm-black);
+            --mm-gray: #bdc3c7;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--mm-yellow); /* Fundo geral amarelo */
+            color: var(--mm-text);
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .control-knob {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: var(--mm-gray);
+            outline: none;
+            opacity: 0.8;
+            transition: opacity .2s;
+            border-radius: 9999px;
+        }
+        .control-knob:hover { opacity: 1; }
+        .control-knob::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--mm-green); /* Botões deslizantes verdes */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .control-knob::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--mm-green); /* Botões deslizantes verdes */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .instruction-key {
+            background-color: white;
+            border: 2px solid var(--mm-red); /* Contorno vermelho */
+            border-radius: 8px;
+            padding: 8px;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .control-panel {
+            background-color: white;
+            padding: 1.25rem;
+            border-radius: 0.5rem;
+            border: 2px solid var(--mm-red); /* Contorno vermelho */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="main-container" class="w-full max-w-5xl p-4 md:p-6 bg-white rounded-2xl shadow-2xl border-4" style="border-color: var(--mm-red);">
+        
+        <header class="text-center mb-6">
+            <h1 class="text-4xl md:text-5xl font-bold" style="color: var(--mm-red);">Sintetizador para Makey Makey</h1>
+            <p class="text-gray-600 mt-1 text-lg">Conecte os seus objetos e toque música!</p>
+        </header>
+
+        <!-- Instruções -->
+        <div class="control-panel mb-6">
+            <h2 class="text-xl font-bold text-center mb-4" style="color: var(--mm-black);">Mapa de teclas/conexões</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-center">
+                <div class="instruction-key">←<span class="block text-sm font-normal">Dó</span></div>
+                <div class="instruction-key">→<span class="block text-sm font-normal">Ré</span></div>
+                <div class="instruction-key">↑<span class="block text-sm font-normal">Mi</span></div>
+                <div class="instruction-key">↓<span class="block text-sm font-normal">Fá</span></div>
+                <div class="instruction-key">Espaço<span class="block text-sm font-normal">Sol</span></div>
+                <div class="instruction-key">Clique<span class="block text-sm font-normal">Lá</span></div>
+                <div class="instruction-key">W<span class="block text-sm font-normal">Si</span></div>
+                <div class="instruction-key">A<span class="block text-sm font-normal">Dó agudo</span></div>
+                <div class="instruction-key">S<span class="block text-sm font-normal">Ré agudo</span></div>
+                <div class="instruction-key">D<span class="block text-sm font-normal">Mi agudo</span></div>
+                <div class="instruction-key">F<span class="block text-sm font-normal">Fá agudo</span></div>
+                <div class="instruction-key">G<span class="block text-sm font-normal">Sol agudo</span></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div class="control-panel">
+                <h2 class="text-lg font-semibold text-center mb-4">Envelope ADSR</h2>
+                <div class="space-y-4">
+                    <!-- Controles ADSR -->
+                    <div><div class="flex justify-between items-center mb-1"><label for="attack">Attack</label><span id="attack-value" class="font-mono text-sm">0.01s</span></div><input type="range" id="attack" min="0.005" max="2" step="0.005" value="0.01" class="control-knob"></div>
+                    <div><div class="flex justify-between items-center mb-1"><label for="decay">Decay</label><span id="decay-value" class="font-mono text-sm">0.10s</span></div><input type="range" id="decay" min="0.01" max="2" step="0.01" value="0.1" class="control-knob"></div>
+                    <div><div class="flex justify-between items-center mb-1"><label for="sustain">Sustain</label><span id="sustain-value" class="font-mono text-sm">0.50</span></div><input type="range" id="sustain" min="0" max="1" step="0.01" value="0.5" class="control-knob"></div>
+                    <div><div class="flex justify-between items-center mb-1"><label for="release">Release</label><span id="release-value" class="font-mono text-sm">1.00s</span></div><input type="range" id="release" min="0.01" max="5" step="0.01" value="1" class="control-knob"></div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 control-panel flex flex-col">
+                 <h2 class="text-lg font-semibold text-center mb-4">Saída Principal</h2>
+                <div class="flex-grow bg-black rounded-md mb-4"><canvas id="visualizer"></canvas></div>
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <button id="audio-button" class="w-full sm:w-auto flex-shrink-0 px-6 py-3 text-white font-bold rounded-lg shadow-md transition-all duration-200" style="background-color: var(--mm-green);">Ativar Áudio</button>
+                    <div class="flex items-center gap-3">
+                        <button id="octave-down" class="px-4 py-2 rounded font-bold text-white" style="background-color: var(--mm-green);">-</button>
+                        <span class="font-mono text-sm">Oitava: <span id="octave-display" class="font-bold">4</span></span>
+                        <button id="octave-up" class="px-4 py-2 rounded font-bold text-white" style="background-color: var(--mm-green);">+</button>
+                    </div>
+                    <div class="w-full sm:w-1/2">
+                        <div class="flex justify-between items-center mb-1"><label for="master-volume">Volume</label><span id="master-volume-value" class="font-mono text-sm">-12 dB</span></div>
+                        <input type="range" id="master-volume" min="-60" max="0" step="1" value="-12" class="control-knob">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <h2 class="text-lg font-semibold text-center mb-4">Harmônicos</h2>
+            <div id="harmonics-container" class="grid grid-cols-4 lg:grid-cols-8 gap-4"></div>
+        </div>
+        
+        <footer class="text-center text-gray-500 text-sm mt-4">
+            By Glauber Santiago - UFSCar
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const NUM_HARMONICS = 8;
+            let audioInitialized = false;
+            let isInitializing = false;
+            let activeNotes = new Set();
+            let currentOctave = 4;
+
+            const mainContainer = document.getElementById('main-container');
+            const audioButton = document.getElementById('audio-button');
+            const harmonicsContainer = document.getElementById('harmonics-container');
+            const attackSlider = document.getElementById('attack');
+            const decaySlider = document.getElementById('decay');
+            const sustainSlider = document.getElementById('sustain');
+            const releaseSlider = document.getElementById('release');
+            const masterVolumeSlider = document.getElementById('master-volume');
+            const attackValue = document.getElementById('attack-value');
+            const decayValue = document.getElementById('decay-value');
+            const sustainValue = document.getElementById('sustain-value');
+            const releaseValue = document.getElementById('release-value');
+            const masterVolumeValue = document.getElementById('master-volume-value');
+            const octaveUpBtn = document.getElementById('octave-up');
+            const octaveDownBtn = document.getElementById('octave-down');
+            const octaveDisplay = document.getElementById('octave-display');
+
+            let synths = [];
+            let masterVolume, envelope, analyser;
+
+            const keyToNoteName = {
+                'arrowleft': 'C', 'arrowright': 'D', 'arrowup': 'E', 'arrowdown': 'F',
+                ' ': 'G', 'w': 'B', 'a': 'C', 's': 'D', 'd': 'E', 'f': 'F', 'g': 'G'
+            };
+            const highOctaveKeys = ['a', 's', 'd', 'f', 'g'];
+
+            async function initializeAudio() {
+                if (audioInitialized || isInitializing) return;
+                isInitializing = true;
+                await Tone.start();
+                
+                masterVolume = new Tone.Volume(parseInt(masterVolumeSlider.value, 10)).toDestination();
+                envelope = new Tone.AmplitudeEnvelope({
+                    attack: parseFloat(attackSlider.value),
+                    decay: parseFloat(decaySlider.value),
+                    sustain: parseFloat(sustainSlider.value),
+                    release: parseFloat(releaseSlider.value),
+                }).connect(masterVolume);
+                analyser = new Tone.Analyser('waveform', 1024);
+                envelope.connect(analyser);
+
+                const harmonicSliders = harmonicsContainer.querySelectorAll('input[type="range"]');
+                for (let i = 0; i < NUM_HARMONICS; i++) {
+                    const initialGainValue = parseFloat(harmonicSliders[i].value);
+                    const harmGain = new Tone.Gain(initialGainValue).connect(envelope);
+                    const osc = new Tone.Oscillator({ frequency: 0, type: 'sine' }).connect(harmGain).start();
+                    synths.push({ osc, gain: harmGain });
+                }
+                
+                audioInitialized = true;
+                isInitializing = false;
+                audioButton.textContent = "Áudio Ativado";
+                audioButton.disabled = true;
+                audioButton.style.backgroundColor = '#bdc3c7';
+                console.log('Contexto de áudio e sintetizadores inicializados.');
+            }
+
+            function playNote(noteIdentifier) {
+                if (!audioInitialized || activeNotes.has(noteIdentifier)) return;
+                
+                let noteName, octave;
+                if (noteIdentifier === 'mouse') {
+                    noteName = 'A';
+                    octave = currentOctave;
+                } else {
+                    noteName = keyToNoteName[noteIdentifier];
+                    octave = highOctaveKeys.includes(noteIdentifier) ? currentOctave + 1 : currentOctave;
+                }
+                
+                const note = `${noteName}${octave}`;
+                activeNotes.add(noteIdentifier);
+
+                const fundamentalFreq = Tone.Frequency(note).toFrequency();
+                synths.forEach((synth, i) => {
+                    synth.osc.frequency.rampTo(fundamentalFreq * (i + 1), 0.01);
+                });
+
+                if (activeNotes.size === 1) {
+                    envelope.triggerAttack(Tone.now());
+                }
+            }
+
+            function stopNote(noteIdentifier) {
+                if (!audioInitialized || !activeNotes.has(noteIdentifier)) return;
+                
+                activeNotes.delete(noteIdentifier);
+
+                if (activeNotes.size === 0) {
+                    envelope.triggerRelease(Tone.now());
+                }
+            }
+
+            for (let i = 0; i < NUM_HARMONICS; i++) {
+                const harmonicControl = document.createElement('div');
+                harmonicControl.className = 'harmonic-control bg-white p-2 rounded-lg border-2 flex flex-col items-center space-y-2';
+                harmonicControl.style.borderColor = 'var(--mm-red)';
+                const label = document.createElement('label');
+                label.className = 'text-sm font-medium';
+                label.textContent = `H${i + 1}`;
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.min = '0'; slider.max = '1'; slider.step = '0.01';
+                slider.value = i === 0 ? '1' : '0';
+                slider.className = 'control-knob transform -rotate-90 w-20 h-2 mt-6 mb-6';
+                slider.addEventListener('input', (e) => {
+                    if (audioInitialized && synths[i]) {
+                        synths[i].gain.gain.rampTo(parseFloat(e.target.value), 0.05);
+                    }
+                });
+                harmonicControl.appendChild(label);
+                harmonicControl.appendChild(slider);
+                harmonicsContainer.appendChild(harmonicControl);
+            }
+
+            audioButton.addEventListener('click', initializeAudio);
+
+            document.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                if (keyToNoteName[key]) {
+                    e.preventDefault();
+                    playNote(key);
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                if (keyToNoteName[key]) {
+                    e.preventDefault();
+                    stopNote(key);
+                }
+            });
+
+            mainContainer.addEventListener('mousedown', () => playNote('mouse'));
+            mainContainer.addEventListener('mouseup', () => stopNote('mouse'));
+            mainContainer.addEventListener('mouseleave', () => stopNote('mouse'));
+
+
+            function updateOctaveButtons() {
+                octaveDownBtn.disabled = currentOctave <= 1;
+                octaveUpBtn.disabled = currentOctave >= 7;
+            }
+            octaveUpBtn.addEventListener('click', () => { if (currentOctave < 7) { currentOctave++; octaveDisplay.textContent = currentOctave; updateOctaveButtons(); } });
+            octaveDownBtn.addEventListener('click', () => { if (currentOctave > 1) { currentOctave--; octaveDisplay.textContent = currentOctave; updateOctaveButtons(); } });
+
+            attackSlider.addEventListener('input', e => { const val = parseFloat(e.target.value); if(audioInitialized) envelope.attack = val; attackValue.textContent = `${val.toFixed(2)}s`; });
+            decaySlider.addEventListener('input', e => { const val = parseFloat(e.target.value); if(audioInitialized) envelope.decay = val; decayValue.textContent = `${val.toFixed(2)}s`; });
+            sustainSlider.addEventListener('input', e => { const val = parseFloat(e.target.value); if(audioInitialized) envelope.sustain = val; sustainValue.textContent = val.toFixed(2); });
+            releaseSlider.addEventListener('input', e => { const val = parseFloat(e.target.value); if(audioInitialized) envelope.release = val; releaseValue.textContent = `${val.toFixed(2)}s`; });
+            masterVolumeSlider.addEventListener('input', e => { const val = parseInt(e.target.value, 10); if(audioInitialized) masterVolume.volume.value = val; masterVolumeValue.textContent = `${val} dB`; });
+
+            const canvas = document.getElementById('visualizer');
+            const canvasCtx = canvas.getContext('2d');
+            function resizeCanvas() { if (!canvas.parentElement) return; canvas.width = canvas.parentElement.clientWidth * window.devicePixelRatio; canvas.height = canvas.parentElement.clientHeight * window.devicePixelRatio; }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            
+            function draw() {
+                requestAnimationFrame(draw);
+                if (!audioInitialized || activeNotes.size === 0) { canvasCtx.clearRect(0, 0, canvas.width, canvas.height); return; };
+                const waveform = analyser.getValue();
+                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+                canvasCtx.lineWidth = 3;
+                // CORREÇÃO: Usar o valor hexadecimal diretamente pois o Canvas API não entende variáveis CSS.
+                canvasCtx.strokeStyle = '#fdea3b'; 
+                canvasCtx.beginPath();
+                const sliceWidth = canvas.width * 1.0 / waveform.length;
+                let x = 0;
+                for (let i = 0; i < waveform.length; i++) {
+                    const v = (waveform[i] / 2.0) + 0.5;
+                    const y = v * canvas.height;
+                    if (i === 0) canvasCtx.moveTo(x, y);
+                    else canvasCtx.lineTo(x, y);
+                    x += sliceWidth;
+                }
+                canvasCtx.lineTo(canvas.width, canvas.height / 2);
+                canvasCtx.stroke();
+            }
+            
+            updateOctaveButtons();
+            draw();
+        });
+    </script>
+</body>
+</html>
